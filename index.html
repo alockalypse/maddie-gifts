@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <title>Gift Registry</title>
+  <script>
+    // Apply a saved theme before first paint to avoid a flash
+    try { var t = localStorage.getItem('registry.theme'); if (t === 'dark' || t === 'light') document.documentElement.setAttribute('data-theme', t); } catch (e) {}
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
@@ -17,9 +21,12 @@
         <h1 id="title">Gift Registry</h1>
         <p id="subtitle" class="muted"></p>
       </div>
-      <div id="user-box" class="user-box" hidden>
-        <span id="greeting"></span>
-        <button id="logout" class="btn-link" type="button">Log out</button>
+      <div class="header-right">
+        <div id="user-box" class="user-box" hidden>
+          <span id="greeting"></span>
+          <button id="logout" class="btn-link" type="button">Log out</button>
+        </div>
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Switch to dark mode">🌙</button>
       </div>
     </div>
   </header>
@@ -46,12 +53,16 @@
 
     <section id="list-view" hidden>
       <div class="toolbar">
+        <div id="views" class="chips views" role="group" aria-label="Show">
+          <button type="button" class="chip" data-view="all" aria-pressed="true">All gifts</button>
+          <button type="button" class="chip" data-view="needed" aria-pressed="false">Still needed</button>
+          <button type="button" class="chip" data-view="mine" aria-pressed="false">Gifts I'm getting</button>
+        </div>
         <div id="categories" class="chips" role="group" aria-label="Filter by category"></div>
-        <label class="toggle"><input type="checkbox" id="hide-claimed"> Hide sorted gifts</label>
       </div>
       <p id="summary" class="muted summary"></p>
       <div id="gifts" class="grid" aria-live="polite"></div>
-      <p id="empty" class="muted empty" hidden>Nothing to show here.</p>
+      <p id="empty" class="muted empty" hidden></p>
     </section>
 
     <div id="loading" class="loading" hidden>Loading…</div>

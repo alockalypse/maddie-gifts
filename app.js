@@ -11,7 +11,7 @@
     gifts: [],
     busy: {},          // giftId -> true while a request is in flight
     category: 'All',
-    hideClaimed: false,
+    view: 'all',       // all | needed | mine
     pollTimer: null,
   };
 
@@ -171,12 +171,22 @@
     renderCategories();
     var list = state.gifts
       .filter(function (g) { return state.category === 'All' || g.category === state.category; })
-      .filter(function (g) { return !(state.hideClaimed && isDone(g)); })
+      .filter(function (g) {
+        if (state.view === 'mine') return g.myQty > 0;
+        if (state.view === 'needed') return g.remaining > 0;
+        return true;
+      })
       .slice()
       .sort(function (a, b) { return (isDone(a) - isDone(b)) || ((a.sortOrder || 0) - (b.sortOrder || 0)); });
 
     $('gifts').innerHTML = list.map(giftCard).join('');
     $('empty').hidden = list.length > 0;
+    $('empty').textContent = state.view === 'mine'
+      ? 'You haven\'t picked anything yet.'
+      : state.view === 'needed' ? 'Everything here is sorted!' : 'Nothing to show here.';
+    Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-view') === state.view));
+    });
 
     var open = state.gifts.filter(function (g) { return g.remaining > 0; }).length;
     var mine = state.gifts.filter(function (g) { return g.myQty > 0; }).length;
@@ -205,7 +215,7 @@
 
   function startPolling() {
     stopPolling();
-    var secs = Math.max(10, Number(cfg.pollSeconds) || 30);
+    var secs = Math.max(5, Number(cfg.pollSeconds) || 10);
     state.pollTimer = setInterval(function () {
       if (document.visibilityState === 'visible' && Object.keys(state.busy).length === 0) refresh(true);
     }, secs * 1000);
@@ -236,15 +246,25 @@
       var sel = document.querySelector('[data-qty-for="' + CSS.escape(id) + '"]');
       extra.qty = sel ? Number(sel.value) : 1;
     }
+    // Optimistic update: show the change immediately, then reconcile with the server
+    var before = state.gifts.map(function (g) { return Object.assign({}, g); });
+    state.gifts = state.gifts.map(function (g) {
+      if (g.id !== id) return g;
+      var n = Object.assign({}, g);
+      if (action === 'claim') { var q = Math.min(extra.qty, n.remaining); n.remaining -= q; n.myQty += q; }
+      else { n.remaining = Math.min(n.qtyWanted, n.remaining + n.myQty); n.myQty = 0; }
+      return n;
+    });
     state.busy[id] = true;
     render();
     api(action, extra).then(function (res) {
       delete state.busy[id];
       if (!res.ok) toast(res.error || 'Something went wrong');
       else if (action === 'claim') toast('Thank you! Marked as yours.');
-      if (res.gifts) applyGifts(res); else { render(); refresh(true); }
+      if (res.gifts) applyGifts(res); else { state.gifts = before; render(); refresh(true); }
     }).catch(function () {
       delete state.busy[id];
+      state.gifts = before;
       render();
       toast('Network problem. Please try again.');
     });
@@ -283,7 +303,34 @@
     if (b) { state.category = b.getAttribute('data-cat'); render(); }
   });
 
-  $('hide-claimed').addEventListener('change', function (e) { state.hideClaimed = e.target.checked; render(); });
+  $('views').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-view]');
+    if (b) { state.view = b.getAttribute('data-view'); render(); }
+  });
+
+  /* ---------- theme ---------- */
+  var darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+  function currentTheme() {
+    var t = document.documentElement.getAttribute('data-theme');
+    if (t === 'dark' || t === 'light') return t;
+    return darkQuery && darkQuery.matches ? 'dark' : 'light';
+  }
+  function syncThemeButton() {
+    var dark = currentTheme() === 'dark';
+    var b = $('theme-toggle');
+    b.textContent = dark ? '☀️' : '🌙';
+    b.setAttribute('aria-label', dark ? 'Switch to light mode' : 'Switch to dark mode');
+  }
+  $('theme-toggle').addEventListener('click', function () {
+    var next = currentTheme() === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    try { localStorage.setItem('registry.theme', next); } catch (e) {}
+    syncThemeButton();
+  });
+  if (darkQuery && darkQuery.addEventListener) darkQuery.addEventListener('change', syncThemeButton);
+  syncThemeButton();
+
+  window.addEventListener('focus', function () { if (state.creds) refresh(true); });
 
   document.addEventListener('visibilitychange', function () {
     if (document.visibilityState === 'visible' && state.creds) refresh(true);
