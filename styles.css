@@ -134,6 +134,13 @@ input:focus-visible, button:focus-visible, a:focus-visible, select:focus-visible
 .site-header .muted { max-width: 46ch; }
 
 .toolbar-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.toolbar-right { display: flex; align-items: center; gap: 8px; }
+.sort-box { display: block; }
+.sort-box select {
+  font: inherit; font-weight: 600; font-size: .9rem; color: var(--ink); background: var(--card);
+  border: 1px solid var(--line); border-radius: 12px; padding: 0 12px; height: 44px; cursor: pointer;
+}
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .layout-toggle { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
 .layout-toggle button {
   width: 40px; height: 36px; border: 0; border-radius: 9px; background: transparent; color: var(--muted);

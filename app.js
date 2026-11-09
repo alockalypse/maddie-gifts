@@ -12,8 +12,9 @@
     busy: {},          // giftId -> true while a request is in flight
     category: 'All',
     view: 'all',       // all | needed | mine
-    layout: 'grid',    // grid | list (remembered per device)
+    layout: 'list',    // list (default) | grid, remembered per device
     budget: null,      // max price, or null for any
+    sort: 'suggested', // suggested | price-asc | price-desc | name
     pollTimer: null,
   };
 
@@ -200,6 +201,19 @@
     });
   }
 
+  function compareGifts(a, b) {
+    var byOrder = (a.sortOrder || 0) - (b.sortOrder || 0);
+    if (state.sort === 'name') return String(a.name).localeCompare(String(b.name), 'en-GB', { sensitivity: 'base' }) || byOrder;
+    if (state.sort === 'price-asc' || state.sort === 'price-desc') {
+      var pa = priceNum(a.price), pb = priceNum(b.price);
+      if (pa == null && pb == null) return byOrder;
+      if (pa == null) return 1;   // unpriced gifts go last either way
+      if (pb == null) return -1;
+      return (state.sort === 'price-asc' ? pa - pb : pb - pa) || byOrder;
+    }
+    return byOrder;
+  }
+
   function render() {
     renderCategories();
     renderBudget();
@@ -217,7 +231,7 @@
         return true;
       })
       .slice()
-      .sort(function (a, b) { return (isDone(a) - isDone(b)) || ((a.sortOrder || 0) - (b.sortOrder || 0)); });
+      .sort(function (a, b) { return (isDone(a) - isDone(b)) || compareGifts(a, b); });
 
     $('gifts').innerHTML = list.map(giftCard).join('');
     $('empty').hidden = list.length > 0;
@@ -357,13 +371,24 @@
     render();
   });
 
+  $('sort').addEventListener('change', function (e) {
+    state.sort = e.target.value;
+    try { localStorage.setItem('registry.sort', state.sort); } catch (err) {}
+    render();
+  });
+
   $('budget').addEventListener('input', function (e) {
     var v = Number(e.target.value);
     state.budget = v >= Number(e.target.max) ? null : v;
     render();
   });
 
-  try { if (localStorage.getItem('registry.layout') === 'list') state.layout = 'list'; } catch (e) {}
+  try { if (localStorage.getItem('registry.layout') === 'grid') state.layout = 'grid'; } catch (e) {}
+  try {
+    var savedSort = localStorage.getItem('registry.sort');
+    if (['suggested', 'price-asc', 'price-desc', 'name'].indexOf(savedSort) !== -1) state.sort = savedSort;
+  } catch (e) {}
+  $('sort').value = state.sort;
 
   /* ---------- theme ---------- */
   var darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
