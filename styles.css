@@ -131,6 +131,37 @@ input:focus-visible, button:focus-visible, a:focus-visible, select:focus-visible
 .chip[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
 .views .chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 .summary { margin: 4px 0 14px; }
+.site-header .muted { max-width: 46ch; }
+
+.toolbar-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.layout-toggle { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.layout-toggle button {
+  width: 40px; height: 36px; border: 0; border-radius: 9px; background: transparent; color: var(--muted);
+  display: grid; place-items: center; cursor: pointer;
+}
+.layout-toggle button[aria-pressed="true"] { background: var(--ink); color: var(--on-ink); }
+
+.budget {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 8px 14px;
+  font-weight: 600; font-size: .92rem; max-width: 520px;
+}
+.budget label { display: block; }
+.budget input[type="range"] { width: 100%; accent-color: var(--accent); min-height: 28px; margin: 0; }
+.budget output { min-width: 6.5em; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* List view */
+.grid.as-list { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+.as-list .gift { flex-direction: row; align-items: stretch; }
+.as-list .gift-img, .as-list .gift-img.no-img {
+  flex: none; width: 48px; height: auto; min-height: 48px; aspect-ratio: auto; font-size: 1.2rem;
+}
+.as-list .gift-body { padding: 10px 12px; gap: 3px; }
+.as-list .desc { display: none; }
+.as-list .gift-name { font-size: 1rem; }
+.as-list .actions { padding-top: 4px; gap: 8px; }
+.as-list .btn { padding: 7px 14px; font-size: .92rem; }
+.as-list .qty { padding: 6px 8px; }
 
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; padding-bottom: 48px; }
 .gift { display: flex; flex-direction: column; overflow: hidden; }

@@ -12,6 +12,8 @@
     busy: {},          // giftId -> true while a request is in flight
     category: 'All',
     view: 'all',       // all | needed | mine
+    layout: 'grid',    // grid | list (remembered per device)
+    budget: null,      // max price, or null for any
     pollTimer: null,
   };
 
@@ -93,6 +95,14 @@
     }
     return String(p);
   }
+  function priceNum(p) {
+    if (typeof p === 'number') return p;
+    var m = String(p == null ? '' : p).replace(/,/g, '').match(/\d+(\.\d+)?/);
+    return m ? parseFloat(m[0]) : null;
+  }
+  function money(n) {
+    return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', minimumFractionDigits: n % 1 ? 2 : 0 }).format(n);
+  }
   function safeUrl(u) {
     u = String(u || '').trim();
     return /^https?:\/\//i.test(u) ? u : '';
@@ -167,10 +177,40 @@
       '</div></article>';
   }
 
+  function renderBudget() {
+    var prices = state.gifts.map(function (g) { return priceNum(g.price); }).filter(function (n) { return n != null; });
+    var box = $('budget-box');
+    if (prices.length < 2) { box.hidden = true; state.budget = null; return; }
+    var max = Math.ceil(Math.max.apply(null, prices));
+    var min = Math.floor(Math.min.apply(null, prices));
+    if (max <= min) { box.hidden = true; state.budget = null; return; }
+    box.hidden = false;
+    var slider = $('budget');
+    slider.min = String(min);
+    slider.max = String(max);
+    if (state.budget != null && state.budget >= max) state.budget = null;
+    slider.value = String(state.budget == null ? max : Math.max(min, state.budget));
+    $('budget-out').textContent = state.budget == null ? 'Any' : 'Up to ' + money(state.budget);
+  }
+
+  function renderLayout() {
+    $('gifts').classList.toggle('as-list', state.layout === 'list');
+    Array.prototype.forEach.call(document.querySelectorAll('[data-layout]'), function (b) {
+      b.setAttribute('aria-pressed', String(b.getAttribute('data-layout') === state.layout));
+    });
+  }
+
   function render() {
     renderCategories();
+    renderBudget();
+    renderLayout();
     var list = state.gifts
       .filter(function (g) { return state.category === 'All' || g.category === state.category; })
+      .filter(function (g) {
+        if (state.budget == null) return true;
+        var n = priceNum(g.price);
+        return n == null || n <= state.budget;
+      })
       .filter(function (g) {
         if (state.view === 'mine') return g.myQty > 0;
         if (state.view === 'needed') return g.remaining > 0;
@@ -183,6 +223,7 @@
     $('empty').hidden = list.length > 0;
     $('empty').textContent = state.view === 'mine'
       ? 'You haven\'t picked anything yet.'
+      : state.budget != null ? 'Nothing in that budget. Try nudging the slider up.'
       : state.view === 'needed' ? 'Everything here is sorted!' : 'Nothing to show here.';
     Array.prototype.forEach.call(document.querySelectorAll('[data-view]'), function (b) {
       b.setAttribute('aria-pressed', String(b.getAttribute('data-view') === state.view));
@@ -307,6 +348,22 @@
     var b = e.target.closest('button[data-view]');
     if (b) { state.view = b.getAttribute('data-view'); render(); }
   });
+
+  $('layouts').addEventListener('click', function (e) {
+    var b = e.target.closest('button[data-layout]');
+    if (!b) return;
+    state.layout = b.getAttribute('data-layout');
+    try { localStorage.setItem('registry.layout', state.layout); } catch (err) {}
+    render();
+  });
+
+  $('budget').addEventListener('input', function (e) {
+    var v = Number(e.target.value);
+    state.budget = v >= Number(e.target.max) ? null : v;
+    render();
+  });
+
+  try { if (localStorage.getItem('registry.layout') === 'list') state.layout = 'list'; } catch (e) {}
 
   /* ---------- theme ---------- */
   var darkQuery = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
