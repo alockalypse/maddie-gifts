@@ -146,7 +146,7 @@
       ? '<a class="shop-link" href="' + esc(safeUrl(g.link)) + '" target="_blank" rel="noopener noreferrer">View item ↗</a>'
       : '';
     var multi = g.qtyWanted > 1;
-    var need = multi ? '<span class="tag">' + g.remaining + ' of ' + g.qtyWanted + ' still needed</span>' : '';
+    var need = multi ? '<span class="tag">' + g.remaining + ' of ' + g.qtyWanted + ' left</span>' : '';
     var busy = !!state.busy[g.id];
     var dis = busy ? ' disabled' : '';
 
@@ -245,7 +245,7 @@
 
     var open = state.gifts.filter(function (g) { return g.remaining > 0; }).length;
     var mine = state.gifts.filter(function (g) { return g.myQty > 0; }).length;
-    $('summary').textContent = open + ' of ' + state.gifts.length + ' gifts still needed' +
+    $('summary').textContent = open + ' of ' + state.gifts.length + ' gifts still available' +
       (mine ? ' · you\'re getting ' + mine : '');
   }
 
